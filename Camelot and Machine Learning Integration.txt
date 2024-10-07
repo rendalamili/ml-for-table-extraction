@@ -1,0 +1,281 @@
+# Install packages
+!pip install camelot-py[cv] ghostscript PyPDF2==1.26.0 pdf2image transformers matplotlib numpy opencv-python pandas torch tensorflow table-transformer transformers datasets
+!apt-get install -y ghostscript
+!pip install --upgrade camelot-py[cv]
+!pip install pytesseract
+!apt-get install -y tesseract-ocr
+!apt-get install -y poppler-utils
+#!pip install --upgrade pillow datasets
+!pip install timm
+!kaggle datasets download -d sreesankar711/pubtables-subset-100k
+!unzip pubtables-subset-100k.zip -d /content/pubtables
+
+# Import libraries
+import os
+import json
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# PDF libaries
+import camelot
+import ghostscript
+import PyPDF2 as pypdf
+from pdf2image import convert_from_path
+
+# Image processsing libaries
+import pytesseract
+import cv2
+import PIL
+from PIL import Image
+from torchvision.datasets import ImageFolder
+from torchvision import transforms
+from PyPDF2 import PdfFileReader
+
+# Pytorch libraries
+import torch
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+
+# Transformer and datasets
+import transformers
+from transformers import TableTransformerForObjectDetection, Trainer, TrainingArguments, pipeline
+from transformers import AutoImageProcessor, TableTransformerForObjectDetection, TrainingArguments, Trainer
+from transformers import DefaultDataCollator
+from transformers import Trainer, TrainingArguments, default_data_collator
+import datasets
+from datasets import load_dataset
+from datasets import Dataset, Features, ClassLabel, Value, Image as ImageType
+
+# Google Collab
+from google.colab import files
+
+# Upload PDF file
+upload = files.upload()
+pdf_file = list(upload.keys())[0]
+
+def extract_pdf_table(pdf_file):
+    # Initialise tables list to store extracted tables
+    tables = []
+
+    # Extract tables using Camelot (stream)
+    try:
+        tables = camelot.read_pdf(pdf_file, pages='all', flavor='stream')
+    except Exception as e:
+        print(f"Error extracting table with Camelot (stream): [{e}]")
+        # Extract using Camelot (lattice)
+        try:
+            tables = camelot.read_pdf(pdf_file, pages='all', flavor='lattice')
+        except Exception as e:
+            print(f"Error extracting table with Camelot (lattice): [{e}]")
+
+    # If tables were sucessfully extracted using Camelot, return them
+    if tables:
+        print(f"Extracted {len(tables)} tables using Camelot.")
+        return [table.df.values.tolist() for table in tables]
+
+    # If Camelot was unsucessful use OCR
+    print("Using OCR for image-based table extraction.")
+
+    # Convert PDF to image using pdf2image
+    images = convert_from_path(pdf_file, poppler_path="/usr/bin", fmt='png')
+
+    # Initialise list to store extracted text from images
+    extract_text_table = []
+
+    # Extract text from images using Tesseract
+    for i, image in enumerate(images):
+      image = image = image.convert('RGB')
+      text = pytesseract.image_to_string(image)
+      extract_text_table.append(text)
+      print(f"Extracted text from image [{i + 1}/{len(images)}]")
+
+    # Process extracted text into structured data
+    extracted_data = []
+    for text in extract_text_table:
+        rows = text.split('\n')  # Split text into rows
+        for row in rows:
+            if row.strip():  # Ignore empty rows
+                extracted_data.append(row.strip().split())  # Split into columns
+
+    return extracted_data  # Return structured data
+
+    #upload = files.upload()
+    #pdf_file = list(upload.keys())[0]
+
+# Example use of extract_pdf_table function
+if __name__ == "__main__":
+    data = extract_pdf_table(pdf_file)
+    print(data)
+
+# Convert table to JSON
+def json_table(table):
+  # Check if table has DataFrame 'df' attribute
+  if hasattr(table, 'df'):
+    header = table.df.values.tolist() # Get df header
+    rows = table.df.values.tolist() # Get df rows
+    # Return list of dictionaries
+    return [dict(zip(header, row)) for row in rows]
+  else:
+    # If table is a list or tuple
+    if table and isinstance(table, (list, tuple)) and len(table) > 1:
+      header = table[0] # First element is header
+      rows = table[1:] # Remaining elements are rows
+      # Return list of dictionaries
+      return [dict(zip(header, row)) for row in rows]
+    else:
+      print("Invalid table format for JSON conversion.")
+      return []
+
+# Extract table from PDF file and store as tables
+tables = extract_pdf_table(pdf_file)
+
+# Convert extracted table to JSON
+json_tables = [json_table(table) for table in tables]
+with open('tables.json', 'w') as f:
+  json.dump(json_tables, f)
+
+# Convert extracted table to an image
+for i, table in enumerate(tables):
+  df = pd.DataFrame(table)
+
+  # Create new figure and axis for plotting
+  fig, ax = plt.subplots()
+  ax.axis('off')
+
+  # Create table plot with DataFrame values and column labels
+  plot_table = ax.table(cellText=df.values, colLabels=df.columns, loc='center')
+
+  # Save plot as PNG image
+  plt.savefig(f'table_{i}.png', bbox_inches='tight', pad_inches=0)
+  plt.close()
+
+# Load image processor
+image_processor = AutoImageProcessor.from_pretrained("microsoft/table-transformer-detection")
+
+# Load training dataset
+train_dataset = load_dataset('imagefolder', data_dir='/content/pubtables/subset/img_train')
+
+# Load validation dataset
+#val_dataset = load_dataset('imagefolder', data_dir='/content/pubtables/subset/img_val')
+
+# Test dataset
+print(train_dataset['train'][0])
+
+# Subset of 100 examples from the training dataset
+subset_training_dataset = train_dataset['train'].select(range(100))
+
+# Apply preprocessing to the training dataset
+#train_dataset = train_dataset.map(preprocess_function, batched=True)
+# Apply preprocessing to the validation dataset
+#val_dataset = val_dataset.map(preprocess_function, batched=True
+
+def preprocess_function(examples):
+    # Define transformations
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)), # Resize image 
+        transforms.ToTensor(),         # Convert image to Pytorch tensor
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]) # Normalise pixel value
+    ])
+
+    # Find colum in dataset that contains image paths or image objects
+    image_column = 'image_path'
+    if image_column not in examples:
+        image_column = 'image'  # Fallback to 'image' column
+        if image_column not in examples:
+            raise KeyError(f"Neither 'image_path' nor 'image' found in the dataset columns: {list(examples.keys())}")
+    
+    if 'pixel_values' in examples:
+        return examples  
+
+    # Initialise 'pixel_values' as tensor list
+    examples['pixel_values'] = []  
+
+    # Check image objects
+    for image in examples[image_column]:  
+        try:
+            # If PIL Image, convert to RGB 
+            pil_image = image.convert("RGB") 
+            # Apply transformations
+            examples['pixel_values'].append(transform(pil_image))
+        except (TypeError, ValueError, IOError, AttributeError) as e:
+            print(f"Error processing image: {e}, type: {type(image)}")
+            examples['pixel_values'].append(torch.zeros(3, 224, 224))  # Placeholder
+
+    # Convert list of tensors to single tensor
+    examples['pixel_values'] = torch.stack(examples['pixel_values'])
+
+    return examples
+
+# Apply preprocessing function to the subset dataset
+subset_training_dataset = subset_training_dataset.map(preprocess_function, batched=True)
+
+# Apply preprocessing to the training dataset
+#train_dataset = train_dataset.map(preprocess_function, batched=True)
+# Apply preprocessing to the validation dataset
+#val_dataset = val_dataset.map(preprocess_function, batched=True)
+
+# Test preprocessing
+print(subset_training_dataset[0])
+
+# Prepare batch for training
+def custom_data_collator(features):
+    # Initialise dictionary to hold batch data
+    batch = {}
+    
+    # Stack pixel value into tensor 
+    batch['pixel_values'] = torch.stack([f['pixel_values'] for f in features])
+
+    # Handle labels
+    if 'labels' in features[0]:
+        batch['labels'] = [f['labels'] for f in features]
+
+    return batch
+	
+# Test dataset
+print(subset_training_dataset[0])
+
+# Test dataset
+print(type(subset_training_dataset['pixel_values'][0]))
+
+# Training arguments
+training_arguments = TrainingArguments(
+    output_dir='./results',                    # Model prediction directory
+    evaluation_strategy='epoch',               # Evaluation strategy during training
+    save_strategy='epoch',                     # Save strategy during training
+    save_total_limit=2,                        # Maximum number of checkpoints to save
+    save_steps=100,                            # Save every 100 steps 
+    learning_rate=2e-5,                        # Learning rate
+    per_device_train_batch_size=16,            # Training batch size 
+    per_device_eval_batch_size=16,             # Evaluation batch size
+    num_train_epochs=3,                        # Training epochs
+    logging_dir='./logs',                      # Logging directory
+    logging_steps=10,                          # Log training
+    remove_unused_columns=False,               # Do not remove unused columns in dataset
+)
+
+# Initialise Trainer for model training
+trainer = Trainer(
+    model=model,                               # Trained model
+    args=training_arguments,                   # Training arguments
+    train_dataset=train_dataset['train'],      # Training dataset
+    data_collator=custom_data_collator         # Data collator for batch
+    #eval_dataset=val_dataset['train'],        # Training validation data set
+)
+
+# Train model
+trainer.train()
+
+# Test image on model
+table_recogniser = pipeline('table-recognition', model=model)
+
+# Load table image
+test_image = Image.open('table_0.png')
+table_recogniser(test_image)
+
+# Convert prediction to JSON
+predicted_tables = json.dumps(table_recogniser(test_image))
+with open('predicted_tables.json', 'w') as f:
+  f.write(predicted_tables)
+
+print(prediction_json)
