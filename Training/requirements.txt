@@ -1,0 +1,17 @@
+camelot-py[cv]
+ghostscript
+PyPDF2==1.26.0
+pdf2image
+transformers
+matplotlib
+numpy
+opencv-python
+pandas
+torch
+tensorflow
+table-transformer
+datasets
+pytesseract
+timm
+Pillow
+torchvision
