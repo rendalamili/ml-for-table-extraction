@@ -150,103 +150,187 @@ for i, table in enumerate(tables):
   plt.savefig(f'table_{i}.png', bbox_inches='tight', pad_inches=0)
   plt.close()
 
+# Load and process table image for use in the TableTransformer pipeline
+table_data = []
+for idx, table in enumerate(json_tables):
+  image_path = f'table_{idx}.png'
+  table_content = table
+  table_data.append((image_path, table_content))
+
+# Pytorch class to create a dataset
+class TableData(torch.utils.data.Dataset):
+  # Initilises TableData class
+  def __init__(self, data):
+    self.data = data # Dataset
+    self.transform = transforms # Preprocessing
+
+  # Returns length of dataset
+  def __len__(self):
+    return len(self.data)
+
+  # Access dataset in index
+  def __getitem__(self, idx):
+    image_path, table_content = self.data[idx] # Gets data from index
+    image = Image.open(image_path).convert("RGB") # Open image using PIL as RGB
+    inputs = self.processor(images=image, return_tensors="pt") # Preprocess as tensor
+
+    # Dictionary to store tensors
+    target = {
+        'boxes': torch.tensor([]),
+        'labels': torch.tensor([]),
+        'image_id': torch.tensor([])
+    }
+
+    # Returns dictionary of processed input data and target data
+    return {**inputs, **target}
+
 # Load image processor
 image_processor = AutoImageProcessor.from_pretrained("microsoft/table-transformer-detection")
 
-# Load training dataset
-train_dataset = load_dataset('imagefolder', data_dir='/content/pubtables/subset/img_train')
+def load_dataset_with_labels(images_dir, annotations_dir, limit=100):
+    dataset = {}
 
-# Load validation dataset
-#val_dataset = load_dataset('imagefolder', data_dir='/content/pubtables/subset/img_val')
+    for filename in os.listdir(annotations_dir):
+        if filename.endswith('_words.json'):
+            with open(os.path.join(annotations_dir, filename)) as f:
+                annotations = json.load(f)
+
+            image_name = filename.replace('_words.json', '.jpg')
+            image_path = os.path.join(images_dir, image_name)
+
+            if os.path.exists(image_path):
+                if image_path not in dataset:
+                    dataset[image_path] = []
+
+                # Collect annotations
+                for item in annotations:
+                    labels = {
+                        'text': item['text'],
+                        'bbox': item['bbox']
+                    }
+                    dataset[image_path].append(labels)
+
+                if len(dataset) >= limit:
+                    break
+            else:
+                print(f"Image not found: {image_path}")
+
+    final_dataset = [{'image_path': img_path, 'labels': labels} for img_path, labels in dataset.items()]
+    return final_dataset[:limit]
+
+# Define directories
+images_dir = '/content/pubtables/subset/img_train'
+annotations_dir = '/content/pubtables/subset/words_train'
+
+# Load the dataset with a limit of 100 unique images
+train_dataset = load_dataset_with_labels(images_dir, annotations_dir, limit=100)
+
+# Print the first 5 items to check
+print(train_dataset[:5])
 
 # Test dataset
-print(train_dataset['train'][0])
+print(train_dataset[0:1])
 
 # Subset of 100 examples from the training dataset
-subset_training_dataset = train_dataset['train'].select(range(100))
+subset_training_dataset = train_dataset[:100]
 
-# Apply preprocessing to the training dataset
-#train_dataset = train_dataset.map(preprocess_function, batched=True)
-# Apply preprocessing to the validation dataset
-#val_dataset = val_dataset.map(preprocess_function, batched=True
+# Check
+for img_path in subset_training_dataset:
+    print(img_path)
 
+
+"""Fix the image transformation by ensuring conversion to torch.Tensor during preprocessing."""
 def preprocess_function(examples):
-    # Define transformations
     transform = transforms.Compose([
-        transforms.Resize((224, 224)), # Resize image 
-        transforms.ToTensor(),         # Convert image to Pytorch tensor
-        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]) # Normalise pixel value
+        transforms.Resize((224, 224)),  # Resize images to 224x224
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
     ])
 
-    # Find colum in dataset that contains image paths or image objects
-    image_column = 'image_path'
-    if image_column not in examples:
-        image_column = 'image'  # Fallback to 'image' column
-        if image_column not in examples:
-            raise KeyError(f"Neither 'image_path' nor 'image' found in the dataset columns: {list(examples.keys())}")
-    
-    if 'pixel_values' in examples:
-        return examples  
+    processed_data = []
 
-    # Initialise 'pixel_values' as tensor list
-    examples['pixel_values'] = []  
+    for example in examples:
+        image_column = 'image_path' if 'image_path' in example else 'image'
 
-    # Check image objects
-    for image in examples[image_column]:  
         try:
-            # If PIL Image, convert to RGB 
-            pil_image = image.convert("RGB") 
-            # Apply transformations
-            examples['pixel_values'].append(transform(pil_image))
-        except (TypeError, ValueError, IOError, AttributeError) as e:
-            print(f"Error processing image: {e}, type: {type(image)}")
-            examples['pixel_values'].append(torch.zeros(3, 224, 224))  # Placeholder
+            # Process the image
+            pil_image = Image.open(example[image_column]).convert("RGB")
+            tensor_image = transform(pil_image)
 
-    # Convert list of tensors to single tensor
-    examples['pixel_values'] = torch.stack(examples['pixel_values'])
+            # Process the labels
+            class_labels = []
+            boxes = []
 
-    return examples
+            for item in example['labels']:
+                # Assuming each item has a 'bbox' and 'text'
+                class_labels.append(0)
+                boxes.append(item['bbox'])
+            processed_data.append({
+                "pixel_values": tensor_image,
+                "labels": {
+                    "class_labels": torch.tensor(class_labels),
+                    "boxes": torch.tensor(boxes)
+                }
+            })
 
-# Apply preprocessing function to the subset dataset
-subset_training_dataset = subset_training_dataset.map(preprocess_function, batched=True)
+        except Exception as e:
+            print(f"Error processing image: {e}")
+            processed_data.append({
+                "pixel_values": torch.zeros(3, 224, 224),  # Placeholder
+                "labels": {
+                    "class_labels": torch.tensor([0]),
+                    "boxes": torch.tensor([[0, 0, 0, 0]])
+                }
+            })
 
-# Apply preprocessing to the training dataset
-#train_dataset = train_dataset.map(preprocess_function, batched=True)
-# Apply preprocessing to the validation dataset
-#val_dataset = val_dataset.map(preprocess_function, batched=True)
+    return processed_data
 
-# Test preprocessing
-print(subset_training_dataset[0])
+"""When an erroneous sample is encountered during collation, None should be returned instead of batch/{}. The Trainer can then ignore this sample.
+"""
 
-# Prepare batch for training
 def custom_data_collator(features):
-    # Initialise dictionary to hold batch data
-    batch = {}
-    
-    # Stack pixel value into tensor 
-    batch['pixel_values'] = torch.stack([f['pixel_values'] for f in features])
+    try:
+        # Initialise a dictionary to hold batch data
+        batch = {}
 
-    # Handle labels
-    if 'labels' in features[0]:
-        batch['labels'] = [f['labels'] for f in features]
+        # Stack pixel values into tensor
+        batch['pixel_values'] = torch.stack([f['pixel_values'] for f in features])
 
-    return batch
-	
-# Test dataset
-print(subset_training_dataset[0])
+        # Handle labels if they exist
+        if 'labels' in features[0]:
+            batch['labels'] = [f['labels'] for f in features]
 
-# Test dataset
-print(type(subset_training_dataset['pixel_values'][0]))
+        return batch
+
+    except Exception as e:
+        print(f"Error during collation: {e}")
+        return None  # Return None to indicate an erroneous sample
+
+"""Replace the raw dataset with the preprocessed subset."""
+
+# Preprocess the dataset
+processed_dataset = preprocess_function(subset_training_dataset)
+
+# Replace the training dataset with the pre-processed subset
+train_dataset = [{"pixel_values": item["pixel_values"], "labels": item["labels"]} for item in processed_dataset]
+
+# Print to confirm the structure of train_dataset
+print(train_dataset[:5])
+
+# Convert the processed dataset into a format suitable for the Trainer
+train_dataset = [{"pixel_values": item["pixel_values"], "labels": item["labels"]} for item in processed_dataset]
+
+from transformers import TrainingArguments
 
 # Training arguments
 training_arguments = TrainingArguments(
     output_dir='./results',                    # Model prediction directory
-    evaluation_strategy='epoch',               # Evaluation strategy during training
+    evaluation_strategy='no',                     # Eval strategy during training
     save_strategy='epoch',                     # Save strategy during training
     save_total_limit=2,                        # Maximum number of checkpoints to save
-    save_steps=100,                            # Save every 100 steps 
+    save_steps=100,                            # Save every 100 steps
     learning_rate=2e-5,                        # Learning rate
-    per_device_train_batch_size=16,            # Training batch size 
+    per_device_train_batch_size=16,            # Training batch size
     per_device_eval_batch_size=16,             # Evaluation batch size
     num_train_epochs=3,                        # Training epochs
     logging_dir='./logs',                      # Logging directory
@@ -254,28 +338,94 @@ training_arguments = TrainingArguments(
     remove_unused_columns=False,               # Do not remove unused columns in dataset
 )
 
-# Initialise Trainer for model training
+from transformers import Trainer
+
+# Ensure your train_dataset is in the correct format
 trainer = Trainer(
     model=model,                               # Trained model
     args=training_arguments,                   # Training arguments
-    train_dataset=train_dataset['train'],      # Training dataset
+    train_dataset=train_dataset,               # Training dataset (use processed dataset)
     data_collator=custom_data_collator         # Data collator for batch
-    #eval_dataset=val_dataset['train'],        # Training validation data set
 )
+
+# Define directories for validation data
+images_val_dir = '/content/pubtables/subset/img_val'
+annotations_val_dir = '/content/pubtables/subset/words_val'
+
+# Load the validation dataset with a limit of 100 unique images (adjust as needed)
+val_dataset = load_dataset_with_labels(images_val_dir, annotations_val_dir, limit=100)
+
+# Preprocess the validation dataset
+processed_val_dataset = preprocess_function(val_dataset)
+
+# Convert the processed dataset into a format suitable for the Trainer
+eval_dataset = [{"pixel_values": item["pixel_values"], "labels": item["labels"]} for item in processed_val_dataset]
+
+# Set the validation dataset in the Trainer
+trainer.eval_dataset = eval_dataset
 
 # Train model
 trainer.train()
 
-# Test image on model
-table_recogniser = pipeline('table-recognition', model=model)
+# Create a table structure recognition pipeline
+table_recogniser = pipeline("object-detection", model="microsoft/table-transformer-structure-recognition")
 
-# Load table image
-test_image = Image.open('table_0.png')
-table_recogniser(test_image)
+# Load and preprocess the uploaded table that has been converted to an image
+for i in range(len(tables)):
+  # Load table image
+  test_image = Image.open(f'table_{i}.png').convert("RGB")
+  inputs = image_processor(images=test_image, return_tensors="pt")
+
+# Get table structure prediction
+predictions = table_recogniser(test_image)
 
 # Convert prediction to JSON
-predicted_tables = json.dumps(table_recogniser(test_image))
-with open('predicted_tables.json', 'w') as f:
-  f.write(predicted_tables)
+predicted_tables = json.dumps(predictions, indent=5)
 
-print(prediction_json)
+# Save the predictions to a JSON file
+with open('predicted_tables.json', 'w') as f:
+    f.write(predicted_tables)
+
+# Print the predictions
+print(predicted_tables)
+
+# Test image
+print(test_image)
+
+# Process image, convert image to numpy array 
+image_np = np.array(test_image)
+
+# Extract text from Predictions using pytesseract OCR
+extracted_data = []
+for predict in predictions:
+    if predict['score'] > 0.5:  # Filter predictions based on confidence score
+        box = predict['box']    # Extract bounding box
+        x0, y0, x1, y1 = map(int, [box['xmin'], box['ymin'], box['xmax'], box['ymax']])  # Convert bounding box to integer and store in integer coordinates
+        cell_image = image_np[y0:y1, x0:x1]  # Crop cell area using boundary coordinates
+        text = pytesseract.image_to_string(cell_image)  # Extract text from cell_image
+        extracted_data.append(text.strip())  # Store text extracted 
+
+# Combine prediction and table content
+join_data = {
+    "predicted_tables": json.loads(predicted_tables),  
+    "extracted_table_data": extracted_data
+}
+
+# Save prediction and extracted table data to a JSON file
+with open('join_data.json', 'w') as f:
+    json.dump(join_data, f, indent=5)
+
+# Print combined data
+print(json.dumps(join_data, indent=5))
+
+# Print extracted table data
+table_data_extracted = {
+    "extracted_table_data": extracted_data  
+}
+
+# Save extracted table data to a JSON file
+with open('table_data_extracted.json', 'w') as f:
+    json.dump(table_data_extracted, f, indent=5)
+
+# Print combined data
+print(json.dumps(table_data_extracted, indent=5))
