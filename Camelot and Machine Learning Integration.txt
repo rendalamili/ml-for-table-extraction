@@ -60,20 +60,27 @@ def extract_pdf_table(pdf_file):
 
     # Extract tables using Camelot (stream)
     try:
-        tables = camelot.read_pdf(pdf_file, pages='all', flavor='stream')
+        tables = camelot.read_pdf(pdf_file, pages='all', flavor='stream', split_text=True, flag_size=True, strip_text=' .\n')
     except Exception as e:
         print(f"Error extracting table with Camelot (stream): [{e}]")
         # Extract using Camelot (lattice)
         try:
-            tables = camelot.read_pdf(pdf_file, pages='all', flavor='lattice')
+            tables = camelot.read_pdf(pdf_file, pages='all', flavor='lattice', process_background=True, shift_text=[''], line_scale=40, copy_text=['v'], layout_kwargs={'detect_vertical': False})
         except Exception as e:
             print(f"Error extracting table with Camelot (lattice): [{e}]")
 
-    # If tables were sucessfully extracted using Camelot, return them
+    # If tables were sucessfully extracted using Camelot process table and return results
     if tables:
         print(f"Extracted {len(tables)} tables using Camelot.")
+        process_table = []
+        for table in tables:
+            df = table.df # Convert table to Dataframe
+            df.columns = df.iloc[0]  # Set first row as column names
+            table.df = df  # Update DataFrame in table object
+            process_table.append(table.df.values.tolist())  # Convert DataFrame to list of list
+        # Return extracted table as list
         return [table.df.values.tolist() for table in tables]
-
+        
     # If Camelot was unsucessful use OCR
     print("Using OCR for image-based table extraction.")
 
