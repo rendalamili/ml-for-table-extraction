@@ -14,7 +14,6 @@ from tqdm import tqdm
 import logging
 from autocorrect import Speller
 
-
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -31,9 +30,26 @@ class TableExtractor:
         self.yolo_model.overrides['agnostic_nms'] = False
         self.yolo_model.overrides['max_det'] = 1000
 
-        # Initialize Table Transformer model
-        self.processor = DetrImageProcessor.from_pretrained("microsoft/table-transformer-structure-recognition")
-        self.model = TableTransformerForObjectDetection.from_pretrained("microsoft/table-transformer-structure-recognition")
+        # Initialize Table Transformer model with try-except block
+        try:
+            self.processor = DetrImageProcessor.from_pretrained(
+                "microsoft/table-transformer-structure-recognition",
+                revision="v1.1-all"
+            )
+            self.model = TableTransformerForObjectDetection.from_pretrained(
+                "microsoft/table-transformer-structure-recognition",
+                revision="v1.1-all",
+                ignore_mismatched_sizes=True
+            )
+        except Exception as e:
+            logger.error(f"Error loading Table Transformer model: {str(e)}")
+            # Fallback to base model if v1.1-all fails
+            self.processor = DetrImageProcessor.from_pretrained(
+                "microsoft/table-transformer-structure-recognition"
+            )
+            self.model = TableTransformerForObjectDetection.from_pretrained(
+                "microsoft/table-transformer-structure-recognition"
+            )
         
         # Initialize PaddleOCR
         self.ocr = PaddleOCR(use_angle_cls=True, lang='en')
@@ -42,12 +58,15 @@ class TableExtractor:
         self.spell = Speller(lang='en')
 
         self.poppler_path = poppler_path
-        self.COLORS = [(int(r * 255), int(g * 255), int(b * 255)) for r, g, b in
-                      [[0.000, 0.447, 0.741], [0.850, 0.325, 0.098],
-                       [0.929, 0.694, 0.125], [0.494, 0.184, 0.556],
-                       [0.466, 0.674, 0.188], [0.301, 0.745, 0.933]]]
+        self.colours = {
+            "table": (int(0.000 * 255), int(0.447 * 255), int(0.741 * 255)),  # Blue
+            "table row": (int(0.850 * 255), int(0.325 * 255), int(0.098 * 255)),  # Orange
+            "table column": (int(0.929 * 255), int(0.694 * 255), int(0.125 * 255)),  # Yellow
+            "table cell": (int(0.494 * 255), int(0.184 * 255), int(0.556 * 255)),  # Purple
+            "other": (int(0.466 * 255), int(0.674 * 255), int(0.188 * 255))  # Green
+        }
 
-    def render_structure_on_image_with_labels(self, pil_img, scores, labels, boxes, output_path=None):
+    def plot_boxes(self, pil_img, scores, labels, boxes, output_path=None):
         img_copy = pil_img.convert("RGB")
         draw = ImageDraw.Draw(img_copy)
 
@@ -56,9 +75,12 @@ class TableExtractor:
         except IOError:
             font = ImageFont.load_default()
 
-        for score, label, (xmin, ymin, xmax, ymax), color in zip(scores.tolist(), labels.tolist(), boxes.tolist(), self.COLORS * 100):
+        for score, label, (xmin, ymin, xmax, ymax) in zip(scores.tolist(), labels.tolist(), boxes.tolist()):
+            label_name = self.model.config.id2label.get(label, "other")
+            color = self.colours.get(label_name, self.colours["other"])
+
             draw.rectangle([xmin, ymin, xmax, ymax], outline=color, width=3)
-            text = f"{self.model.config.id2label[label]}: {score:.2f}"
+            text = f"{label_name}: {score:.2f}"
             text_bbox = draw.textbbox((xmin, ymin), text, font=font)
             draw.rectangle([xmin, ymin - text_bbox[3] + text_bbox[1], xmin + text_bbox[2] - text_bbox[0], ymin], fill="black")
             draw.text((xmin, max(0, ymin - (text_bbox[3] - text_bbox[1]))), text, fill="white", font=font)
@@ -66,6 +88,7 @@ class TableExtractor:
         if output_path:
             img_copy.save(output_path)
         return img_copy
+
 
     def crop_table_with_dynamic_padding(self, image, box, padding_ratio=0.05):
         x_min, y_min, x_max, y_max = [int(coord) for coord in box.xyxy[0].tolist()]
@@ -175,7 +198,7 @@ class TableExtractor:
                     target_sizes = [cropped_table.size[::-1]]
                     results = self.processor.post_process_object_detection(outputs, threshold=0.6, target_sizes=target_sizes)[0]
 
-                    structure_img = self.render_structure_on_image_with_labels(
+                    structure_img = self.plot_boxes(
                         cropped_table, 
                         results["scores"], 
                         results["labels"], 
@@ -232,25 +255,30 @@ def main():
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
-    # Initialize TableExtractor
-    extractor = TableExtractor(poppler_path=args.poppler)
-
-    # Process single PDF file or directory
-    if os.path.isfile(input_path):
-        if input_path.lower().endswith('.pdf'):
-            extractor.process_pdf(input_path, output_dir)
-        else:
-            logger.error(f"Input file is not a PDF: {input_path}")
-    else:
-        # Process all PDFs in the directory
-        pdf_files = [f for f in os.listdir(input_path) if f.lower().endswith('.pdf')]
-        if not pdf_files:
-            logger.error(f"No PDF files found in directory: {input_path}")
-            sys.exit(1)
+    try:
+        # Initialize TableExtractor with error handling
+        extractor = TableExtractor(poppler_path=args.poppler)
         
-        for pdf_file in pdf_files:
-            pdf_path = os.path.join(input_path, pdf_file)
-            extractor.process_pdf(pdf_path, output_dir)
+        # Process single PDF file or directory
+        if os.path.isfile(input_path):
+            if input_path.lower().endswith('.pdf'):
+                extractor.process_pdf(input_path, output_dir)
+            else:
+                logger.error(f"Input file is not a PDF: {input_path}")
+        else:
+            # Process all PDFs in the directory
+            pdf_files = [f for f in os.listdir(input_path) if f.lower().endswith('.pdf')]
+            if not pdf_files:
+                logger.error(f"No PDF files found in directory: {input_path}")
+                sys.exit(1)
+            
+            for pdf_file in pdf_files:
+                pdf_path = os.path.join(input_path, pdf_file)
+                extractor.process_pdf(pdf_path, output_dir)
+    
+    except Exception as e:
+        logger.error(f"Error during execution: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
