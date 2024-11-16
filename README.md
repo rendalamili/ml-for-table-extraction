@@ -8,7 +8,6 @@
 3. [Usage](#usage)
 4. [Features](#features)
 5. [FAQ](#faq)
-6. [Contributing](#contributing)
 
 ## Overview
 The **PDF Table Extraction Tool** is a CLI-based tool designed for extracting tabular data from PDF documents using machine learning models. It simplifies data extraction, supporting complex table structures and embedded OCR for text recognition.
