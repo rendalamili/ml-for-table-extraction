@@ -71,49 +71,49 @@ A: Yes, it has integrated OCR capabilities for such files.
 The Frequently Asked Question (FAQ) section will answer common questions, help users resolve common issues and provide troubleshooting tips. 
 
  
-**Q. What is the purpose of the tool? 
+**Q. What is the purpose of the tool?**
  
 A: The Extraction Tool is designed to streamline and automate the table extraction process by extracting table information from PDF files. 
  
-**Q. How does the tool detect tables? 
+**Q. How does the tool detect tables?**
  
 A: The table extraction tool utilises two machine learning models to detect tables and handle table structure recognition. 
  
-**Q. How does the tool extract information from tables? 
+**Q. How does the tool extract information from tables?**
  
 A: The tool has integrated OCR capabilities to scan each cell of the table to extract text. 
  
  
-**Q. Can the tool extract table information from image-based PDF documents? 
+**Q. Can the tool extract table information from image-based PDF documents?** 
  
 A: Yes. 
  
  
-**Q. How accurate is the information extracted? 
+**Q. How accurate is the information extracted?**
  
 A: The Extraction Tool has an end-to-end accuracy score of 77%. 
  
 
-**Q. Does the tool extract tables from non-PDF files? 
+**Q. Does the tool extract tables from non-PDF files?**
 
  
 A: The tool is limited to only processing PDF documents. 
  
  
-**Q. How many PDFs can be processed at once? 
+**Q. How many PDFs can be processed at once?**
  
 A: The tool can extract one PDF file at a time and is capable of processing PDF file size greater than 10MB.  
  
  
-**Q. Why am I getting error messages during installation? 
+**Q. Why am I getting error messages during installation?**
  
 A: Please ensure you have the table extraction tool located in the same driver as Python during installation. 
  
-**Q. Why am I getting errors with dependencies? 
+**Q. Why am I getting errors with dependencies?**
  
 A :Please ensure you have the correct Python path set up within your system; you can configure this in Advanced systems settings. 
  
-**Q. Why is the tool not generating an output? 
+**Q. Why is the tool not generating an output?** 
  
 A: Please ensure you the required libraries and dependencies installed and that they are in the system’s PATH. 
 
