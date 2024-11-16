@@ -26,7 +26,7 @@ The **PDF Table Extraction Tool** is a CLI-based tool designed for extracting ta
 3. Run the installer or set up dependencies manually.
 
 ### Usage
-** Running the tool: 
+**Running the tool:** 
 Run the Table Extractor CLI batch file as Administrator, this will create a virtual environment and install the dependencies.  
 
 Alternatively, you can launch the Command Prompt (CDM) and type in the Terminal: 
@@ -45,7 +45,7 @@ Option 2: Select this option if you would like to change the Poppler path.  If y
 Option 3: Select this option if you wish to close the program. 
 
 Once the tool processes the PDF file, the script will display a confirmation message:  
-** Processing complete 
+**Processing complete**
 
 The extracted table information will now be saved in the specified Output folder. 
 Within the Output folder, a new folder will be created, titled with the name of the PDF file extracted (This folder will contain the output results of the extraction)
@@ -53,11 +53,11 @@ Located within this folder is extracted table information saved as a CSV file.
 
 After processing the file, the Extraction Tool will prompt: 
 
-Would you like to process more files? (Y/N): 
+**Would you like to process more files? (Y/N):**
 
-Select Y: To return to the main menu and process more files 
+**Select Y**: To return to the main menu and process more files 
 
-Select N: To end the program. 
+**Select N:** To end the program. 
 
 ## Features
 - 🚀 High accuracy table detection
