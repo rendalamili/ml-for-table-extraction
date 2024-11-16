@@ -65,9 +65,6 @@ After processing the file, the Extraction Tool will prompt:
 - 📄 Outputs in CSV Format with bounding box visuals!
 
 ## FAQ
-**Q: Can the tool handle image-based PDFs?**  
-A: Yes, it has integrated OCR capabilities for such files.
-
 The Frequently Asked Question (FAQ) section will answer common questions, help users resolve common issues and provide troubleshooting tips. 
 
  
