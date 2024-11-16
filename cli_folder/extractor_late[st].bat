@@ -30,38 +30,29 @@ call venv\Scripts\activate.bat
 echo Installing dependencies...
 pip install --upgrade pip
 
-:: Install core dependencies first
-echo Installing core dependencies...
-pip install "numpy>=1.21.0"
-pip install "pandas>=1.3.0"
-pip install "Pillow>=8.3.0"
-pip install "torch>=1.9.0"
+:: First batch - core dependencies
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+pip install numpy==1.26.4
+pip install pandas==1.5.3
+pip install Pillow==9.5.0
 
-:: Install visualization packages
-echo Installing visualization packages...
-pip install "matplotlib>=3.5.0"
-pip install "seaborn>=0.12.0"
+:: Second batch - ML related
+pip install timm==0.6.13
+pip install transformers==4.46.2
 
-:: Install ML-related packages
-echo Installing ML packages...
-pip install "transformers>=4.11.0"
-pip install "ultralytics==8.0.43"
-pip install "ultralyticsplus==0.0.28"
+:: Third batch - PDF and OCR related
+pip install pdf2image==1.16.3
+pip install paddleocr==2.9.1
+pip install paddlepaddle==2.6.2
 
-:: Install PDF processing
-echo Installing PDF processing...
-pip install "pdf2image>=1.16.0"
+:: Fourth batch - Table extraction specific
+pip install ultralytics==8.0.43
+pip install ultralyticsplus==0.0.28
 
-:: Install Paddle packages
-echo Installing Paddle packages...
-pip install "paddlepaddle>=2.4.0"
-pip install "paddleocr>=2.6.0"
-
-:: Install remaining utilities
-echo Installing utilities...
-pip install "tqdm>=4.62.0"
-pip install "autocorrect>=2.6.1"
-pip install "openpyxl>=3.0.0"
+:: Fifth batch - Other dependencies
+pip install tqdm
+pip install matplotlib
+pip install autocorrect
 
 :: Check for Poppler installation
 set "DEFAULT_POPPLER_PATH=C:\poppler-24.08.0\Library\bin"
@@ -86,38 +77,40 @@ echo Currently using:
 echo - Poppler: %POPPLER_PATH%
 echo - Working Directory: %SCRIPT_DIR%
 echo.
-echo 1. Use current directory for input and output
-echo 2. Specify input and output directories
-echo 3. Change Poppler path
-echo 4. Exit
+echo 1. Specify input and output directories
+echo 2. Change Poppler path
+echo 3. Exit
 echo.
 
-set /p CHOICE="Enter your choice (1-4): "
+set /p CHOICE="Enter your choice (1-3): "
 
 if "%CHOICE%"=="1" (
-    if not exist "output" mkdir output
-    set "CMD=python "%SCRIPT_DIR%pipeline_extractor3.py""
-    set "CMD=!CMD! "%CD%""
-    set "CMD=!CMD! --output "%CD%\output""
-    set "CMD=!CMD! --poppler "%POPPLER_PATH%""
-    !CMD!
-    goto end
+
+
+    :ask_input
+	set "INPUT_DIR="
+	set /p INPUT_DIR="Enter input directory path (or press Enter for current directory): "
+	if "!INPUT_DIR!"=="" set "INPUT_DIR=%SCRIPT_DIR:~0,-1%"
+	
+	if not exist "!INPUT_DIR!" goto invalid_path
+	
+
+    :ask_output
+    set /p OUTPUT_DIR="Enter output directory path (or press Enter for input_dir/output): "
+	if "!OUTPUT_DIR!"=="" set "OUTPUT_DIR=!INPUT_DIR!\output"
+
+    if not exist "!OUTPUT_DIR!" mkdir "!OUTPUT_DIR!"
+	
+	
+	echo Input Directory: !INPUT_DIR!
+	echo Output Directory: !OUTPUT_DIR!
+	echo Processing files...
+    
+    python "%SCRIPT_DIR%pipeline_extractor.py" "!INPUT_DIR!" --output "!OUTPUT_DIR!" --poppler "%POPPLER_PATH%"
+    goto results
 )
 
 if "%CHOICE%"=="2" (
-    set /p INPUT_DIR="Enter input directory path (or press Enter for current directory): "
-    if "!INPUT_DIR!"=="" set "INPUT_DIR=%SCRIPT_DIR%"
-    
-    set /p OUTPUT_DIR="Enter output directory path (or press Enter for input_dir/output): "
-    if "!OUTPUT_DIR!"=="" set "OUTPUT_DIR=!INPUT_DIR!\output"
-    
-    if not exist "!OUTPUT_DIR!" mkdir "!OUTPUT_DIR!"
-    
-    python "%SCRIPT_DIR%pipeline_extractor3.py" "!INPUT_DIR!" --output "!OUTPUT_DIR!" --poppler "%POPPLER_PATH%"
-    goto end
-)
-
-if "%CHOICE%"=="3" (
     echo Current Poppler path: %POPPLER_PATH%
     set /p NEW_POPPLER="Enter new Poppler path (or press Enter to keep current): "
     if not "!NEW_POPPLER!"=="" (
@@ -134,17 +127,16 @@ if "%CHOICE%"=="3" (
     goto menu
 )
 
-if "%CHOICE%"=="4" (
-    echo Exiting...
-    deactivate
-    exit /b 0
+if "%CHOICE%"=="3" (
+    echo Exiting...  
+	goto end
 )
 
 echo Invalid choice. Please try again.
 timeout /t 2 >nul
 goto menu
 
-:end
+:results
 echo.
 echo Processing complete!
 if exist "!OUTPUT_DIR!" (
@@ -158,9 +150,24 @@ if exist "!OUTPUT_DIR!" (
 )
 echo.
 
+:ask_continue
 set /p CONTINUE="Would you like to process more files? (Y/N): "
-if /i "%CONTINUE%"=="Y" goto menu
 
+if /i "%CONTINUE%"=="Y" goto menu
+if /i "%CONTINUE%"=="N" goto end
+
+
+echo Invalid input. Please enter Y or N.
+goto ask_continue
+	
+
+
+:end
 echo Thank you for using Table Extractor
-deactivate
 pause
+deactivate
+exit /b 0
+
+:invalid_path
+echo This path does not exist. Please try again.
+goto ask_input

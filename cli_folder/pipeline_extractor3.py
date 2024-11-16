@@ -221,8 +221,8 @@ class TableExtractor:
                         data = cleaned_rows[1:] if len(cleaned_rows) > 1 else []
                         df = pd.DataFrame(data, columns=headers)
                         
-                        # Save as CSV
-                        csv_filename = f'page_{page_num + 1}_table_{table_num + 1}.csv'
+                        # Modified CSV filename to include PDF name
+                        csv_filename = f'{pdf_name}_page_{page_num + 1}_table_{table_num + 1}.csv'
                         csv_path = os.path.join(pdf_output_dir, csv_filename)
                         df.to_csv(csv_path, index=False)
                         
