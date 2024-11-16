@@ -1,5 +1,4 @@
 # MACHINE LEARNING FOR TABLE INFORMATION EXTRACTION  📝
-Extracts tabular data from PDFs and outputs it as CSV.
 
 ![Screenshot](Assets/Pipeline.jpeg)
 
