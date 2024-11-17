@@ -117,8 +117,11 @@ A: Please ensure you the required libraries and dependencies installed and that 
 ## Repository Structure
 Here's an overview of the repository structure and what you'll find in each part:
 
-Repository Structure
+## Repository Structure
 
+Here's an overview of the repository structure and what you'll find in each part:
+
+```plaintext
 .
 ├── cli_folder
 │   ├── requirements.txt
@@ -140,13 +143,11 @@ Repository Structure
 ├── README.md
 ├── .gitignore
 │
-│
 └── Capstone2
     ├── Model Training Attempts
     ├── MISC
     ├── Testing
     └── Final
-
 
 
 
