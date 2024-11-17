@@ -1,6 +1,6 @@
 # MACHINE LEARNING FOR TABLE INFORMATION EXTRACTION  📝
 
-![Screenshot](Capstone2/MISC/JSON Extension to OCR Output)
+![Screenshot](Capstone2/MISC/Pipeline.jpeg)
 
 ## Table of Contents
 1. [Overview](#overview)
