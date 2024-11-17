@@ -116,7 +116,9 @@ A: Please ensure you the required libraries and dependencies installed and that 
 
 ## Repository Structure
 Here's an overview of the repository structure and what you'll find in each part:
+
 Repository Structure
+
 .
 ├── cli_folder
 │   ├── requirements.txt
@@ -125,6 +127,7 @@ Repository Structure
 │   ├── Camelot_and_Machine_Learning.ipynb
 │   ├── pdf_table_extractor.py
 │   └── temp_table.png
+│
 ├── Capstone1
 │   ├── Tables
 │   ├── Copy_of_Model_Testing_and_Metrics.ipynb
@@ -133,13 +136,17 @@ Repository Structure
 │   ├── Ayrn output
 │   ├── DocTR csv output
 │   └── Model_Testing_and_Metrics.ipynb
+│
 ├── README.md
 ├── .gitignore
+│
+│
 └── Capstone2
     ├── Model Training Attempts
     ├── MISC
     ├── Testing
     └── Final
+
 
 
 
