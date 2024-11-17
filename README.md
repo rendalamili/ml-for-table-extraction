@@ -37,7 +37,7 @@ Python pipeline_extractor.py path/to/input --output path/to/output --poppler_pat
 ## Prompts
 Users will be prompted to select between the Options of 1-3 from the main menu: 
 
-Option 1:  Select this option to begin the table extraction process.  If you wish to use the current directory for input and output press ENTER, this will use the current directory. Please ensure you have the PDF file you want to extract in this directory. 
+Option 1:  Select this option to begin the table extraction process.  If you wish to use the current directory for input and output press ENTER, this will use the current directory.   If you prefer a custom input and output location, please specify these paths when prompted. Please ensure you have the PDF file you want to extract in this directory. 
 
 Option 2: Select this option if you would like to change the Poppler path.  If you select this option, you will be prompted to specify the new Poppler path. 
 
