@@ -114,4 +114,46 @@ A : Please ensure you have the correct Python path set up within your system; yo
 A: Please ensure you the required libraries and dependencies installed and that they are in the system’s PATH. 
 
 
+## Repository Structure
+Here's an overview of the repository structure and what you'll find in each part:
+
+└── ├── cli_folder
+│   └── ├── requirements.txt
+│   └── ├── logs
+│   └── ├── pdf_table_extractor - training ver.py
+│   └── ├── Camelot_and_Machine_Learning.ipynb
+│   └── ├── pdf_table_extractor.py
+│   └── ├── temp_table.png
+└── ├── Capstone1
+│   └── ├── Tables
+│   └── ├── Copy_of_Model_Testing_and_Metrics.ipynb
+│   └── ├── ML_for_Table_Extraction_Model_Testing.ipynb
+│   └── ├── Table_Extraction_Metric_Testing.ipynb
+│   └── ├── Ayrn output
+│   └── ├── DocTR csv output
+│   └── ├── Model_Testing_and_Metrics.ipynb
+└── ├── README.md
+└── ├── .gitignore
+└── ├── .git
+│   └── ├── config
+│   └── ├── objects
+│   └── ├── HEAD
+│   └── ├── info
+│   └── ├── logs
+│   └── ├── description
+│   └── ├── hooks
+│   └── ├── refs
+│   └── ├── index
+│   └── ├── packed-refs
+└── ├── structure.txt
+└── ├── Capstone2
+│   └── ├── Model Training Attempts
+│   └── ├── MISC
+│   └── ├── Testing
+│   └── ├── Final
+
+
+
+
+
 
