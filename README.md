@@ -122,7 +122,6 @@ Here's an overview of the repository structure and what you'll find in each part
 Here's an overview of the repository structure and what you'll find in each part:
 
 ```plaintext
-.
 ├── cli_folder
 │   ├── requirements.txt
 │   ├── logs
@@ -148,9 +147,3 @@ Here's an overview of the repository structure and what you'll find in each part
     ├── MISC
     ├── Testing
     └── Final
-
-
-
-
-
-
