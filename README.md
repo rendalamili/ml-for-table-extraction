@@ -98,7 +98,7 @@ A: The tool is limited to only processing PDF documents.
  
 **Q. How many PDFs can be processed at once?**
  
-A: The tool can extract one PDF file at a time and is capable of processing PDF file size greater than 10MB.  
+A: The tool can extract one PDF file at a time and is capable of processing PDF file sizes greater than 10MB.  
  
  
 **Q. Why am I getting error messages during installation?**
