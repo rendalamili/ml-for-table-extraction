@@ -87,7 +87,7 @@ A: Yes.
  
 **Q. How accurate is the information extracted?**
  
-A: The Extraction Tool has an end-to-end accuracy score of 77%. 
+A: The Extraction Tool has an end-to-end accuracy score of 80%. 
  
 
 **Q. Does the tool extract tables from non-PDF files?**
@@ -107,7 +107,7 @@ A: Please ensure you have the table extraction tool located in the same driver a
  
 **Q. Why am I getting errors with dependencies?**
  
-A :Please ensure you have the correct Python path set up within your system; you can configure this in Advanced systems settings. 
+A : Please ensure you have the correct Python path set up within your system; you can configure this in Advanced systems settings. 
  
 **Q. Why is the tool not generating an output?** 
  
