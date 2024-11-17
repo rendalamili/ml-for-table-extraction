@@ -116,8 +116,41 @@ A: Please ensure you the required libraries and dependencies installed and that 
 
 ## Repository Structure
 Here's an overview of the repository structure and what you'll find in each part:
-
-├── cli_folder # CLI scripts and tools │ ├── requirements.txt # Dependencies for the CLI environment │ ├── logs # Log files │ ├── pdf_table_extractor - training ver.py # Training version of the PDF extractor script │ ├── pdf_table_extractor.py # Main PDF table extraction script │ ├── temp_table.png # Temporary output image │ └── Camelot_and_Machine_Learning.ipynb # Camelot ML notebook ├── Camelot_and_Machine_Learning.ipynb # Main notebook for Camelot integration ├── Capstone1 # Capstone project data and analysis │ ├── Tables # Folder with table data │ ├── Copy_of_Model_Testing_and_Metrics.ipynb # Notebook copy for model testing │ ├── Table_Extraction_Metric_Testing.ipynb # Table extraction metric testing │ ├── Ayrn output # Output data folder │ ├── DocTR csv output # CSV outputs from DocTR │ └── Model_Testing_and_Metrics.ipynb # Main testing notebook ├── ML_for_Table_Extraction_Model_Testing.ipynb # Notebook for model testing ├── README.md # Main README file ├── .gitignore # Git ignored files ├── .git # Git repository information │ ├── config │ ├── objects │ ├── HEAD │ ├── info │ ├── logs │ ├── description │ ├── hooks │ ├── refs │ ├── index │ ├── packed-refs │ └── COMMIT_EDITMSG ├── structure.txt # Directory structure output ├── Assets # Project assets and images │ └── Pipeline.jpeg # Image of the pipeline diagram ├── Capstone2 # Capstone phase 2 files │ ├── Model Training Attempts # Subfolder for training experiments │ ├── MISC # Miscellaneous files │ ├── Testing # Testing scripts and notebooks │ └── Final # Final project files └── Camelot_TableExtractionOnly.ipynb # Notebook for Camelot-only table extraction
+.
+├── cli_folder
+│   ├── requirements.txt
+│   ├── logs
+│   ├── pdf_table_extractor - training ver.py
+│   ├── Camelot_and_Machine_Learning.ipynb
+│   ├── pdf_table_extractor.py
+│   ├── temp_table.png
+├── Capstone1
+│   ├── Tables
+│   ├── Copy_of_Model_Testing_and_Metrics.ipynb
+│   ├── ML_for_Table_Extraction_Model_Testing.ipynb
+│   ├── Table_Extraction_Metric_Testing.ipynb
+│   ├── Ayrn output
+│   ├── DocTR csv output
+│   ├── Model_Testing_and_Metrics.ipynb
+├── README.md
+├── .gitignore
+├── .git
+│   ├── config
+│   ├── objects
+│   ├── HEAD
+│   ├── info
+│   ├── logs
+│   ├── description
+│   ├── hooks
+│   ├── refs
+│   ├── index
+│   ├── packed-refs
+├── structure.txt
+├── Capstone2
+│   ├── Model Training Attempts
+│   ├── MISC
+│   ├── Testing
+│   ├── Final
 
 
 
